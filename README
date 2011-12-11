@@ -1,0 +1,6 @@
+This queries the LibraryCloud API for all items matching a particular keyword, retrieved in ascending order, based on a calculation of "community relevance" that is grounded in circulation records.
+
+It is merely a sample. I am not a developer, as you'll see from the code. In fact, the point is that this API provides easy enough access that even non-devs can use it.
+
+David Weinberger
+sef@evident.com
