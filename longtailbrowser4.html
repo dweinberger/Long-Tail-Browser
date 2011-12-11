@@ -1,0 +1,226 @@
+<html> 
+    <head> 
+<!--
+
+     Little sample script for playing with the early DPLA API.
+     If shows the lowest ranked results from a query against the DPLA catalog,
+     where the rank is determined by circulation data.
+     
+     Important point: I'm not a developer. Be kind.
+     
+     No rights reserved. Don't expect it to work.
+     Thank you, Matt Phillips and Paul Deschner!
+     David Weinberger
+     December 10, 2011
+     self@evident.com
+-->
+
+    <title>LibraryCloud Long Tail Browser</title> 
+        
+        
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script> 
+<link rel="STYLESHEET" type="text/css" href="longtailbrowser.css"> 
+ 
+<script language="javascript" type="text/javascript"> 
+
+  // global
+  var whichrow = true;
+
+function buildTable(tit,auth,score,subj,pubdate){
+  // build a table, row by row, from the returned data
+  
+  if (tit == null) { tit="";}
+  if (auth == null) { auth="";}
+  if (score == null) { score="-";}
+  if (subj == null) { subj="";}
+  if (pubdate == null) { pubdate="";}
+
+  // does the table exist already?
+  var da = document.getElementById("displayarea"); // div for displaying the table
+  var tab = document.getElementById("tab");
+  // if not, then create the table and its header
+  if (( tab==null) || (tab == "undefined") ) {
+	var tbl = document.createElement("table");
+	tbl.setAttribute("id","tab"); // and we shall call it "tab"
+	da.appendChild(tbl);	 
+	// Create headers
+	var headings =  ['Date','Score', 'Title', 'Author','Description'];
+	var hdr = document.createElement("tHead");
+	tbl.appendChild(hdr);
+	var hdrrow =  document.createElement("tr");
+	for (var i = 0; i < 5; i++) {  // create the 5 column headers
+			cell = document.createElement("td");
+			pcell = document.createElement("p");
+			pcell.setAttribute("class","hdr");
+			cell.appendChild(pcell);
+			pcell.innerHTML = headings[i];
+			pcell.setAttribute("class","hdr");
+			hdrrow.appendChild(cell);
+				}	
+	hdr.appendChild(hdrrow);	 // insert the hdr row 
+	 
+	//create table body
+	var tbod = document.createElement("tbody");
+	tbl.appendChild(tbod);
+  }
+  
+  // create new row
+    var tr = document.createElement("tr"); 
+    // alternate row color. whichrow is a global
+    if (whichrow) { // alternate row colors
+      tr.setAttribute("class","row1");
+      }
+      else {tr.setAttribute("class","row0");
+     }
+  whichrow = !whichrow;
+  
+  var tbl = document.getElementById("tab");
+  
+  // create the cells of the row
+
+  var td = document.createElement("td");
+  var p = document.createElement("p")
+  p.innerHTML=(pubdate);
+  p.setAttribute("class","date");
+  td.appendChild(p);
+  tr.appendChild(td);
+  
+  td = document.createElement("td"); // score
+  p = document.createElement("p");
+  if (score==null) {
+     score="-";
+     } 
+  p.innerHTML = score;
+  p.setAttribute("class","score");
+  td.appendChild(p);
+  tr.appendChild(td);
+  
+  td = document.createElement("td"); // title
+  p = document.createElement("p")
+  p.innerHTML=tit;
+  p.setAttribute("class","title");
+  td.appendChild(p);
+  tr.appendChild(td);
+  
+  td = document.createElement("td"); // author/creator
+  p = document.createElement("p")
+  p.innerHTML=auth;
+  p.setAttribute("class","desc");
+  td.appendChild(p);
+  tr.appendChild(td);
+  
+  td = document.createElement("td"); // subject
+  p = document.createElement("p")
+  p.innerHTML=subj;
+  p.setAttribute("class","desc");
+  td.appendChild(p);
+  tr.appendChild(td);
+  
+  tbl.appendChild(tr);
+
+}
+ 
+ //--------------- DOCALL--------
+function doCall(){
+  // call the api
+   
+  // get the  search term
+  var searchterm = document.getElementById("searchbox").value;
+  // check it
+  if (searchterm=="") { // error check
+	alert("Enter something to search for");
+	return
+  }
+  
+  // trim the spaces etc. from it
+  searchterm = $.trim(searchterm);
+  
+    //clear old table
+    var da = document.getElementById('displayarea'); // the div where the table is displayed
+    da.innerHTML="";
+  
+   // create the url for the api call
+   var restfulURI="http://hlsl10.law.harvard.edu/librarycloud/v.3/api/item/?callback=?&search_type=keyword&key=d41d8cd98f00b204e980&sort=shelfrank%20asc";
+   restfulURI = restfulURI + "&query=" + searchterm;
+   
+   var respo="not yet";
+   
+  // do the jquery call
+   $.getJSON(restfulURI,
+	 function (data) {
+	   var items = [];
+	   // go through each returned item
+	  $.each(data, function(key, val) {
+		if (key == "docs") { // look for the list of returned items
+		for (var i=0; i < val.length; i++) {
+		   // send data to the table row builder
+		   buildTable(val[i].title,val[i].creator,val[i].shelfrank,val[i].desc_subj_lcsh,val[i].pub_date);
+		}
+	  }
+	  }
+	  )
+	});
+  
+   
+
+   
+  // Create line stating the subject searched for
+  var subjtitle = document.createElement("p");
+  //subjtitle.innerHTML= total_number + " results for <b>" + unescape(searchterm) + "</b>. Here are the lowest 25:";
+  subjtitle.setAttribute("class","subjtitle");
+  da.appendChild(subjtitle);
+   
+	return false;
+}
+ 
+
+function toggleExplanation(){
+ // show and hide the explanation
+ var div = document.getElementById("explans");
+ if (div.style.display=="none") {
+     $(div).show("slow");
+     }
+     else {
+     $(div).hide("slow");
+     }
+}
+
+function addCommas(nStr) {
+  // tnanks, mredkj!
+  //http://www.mredkj.com/javascript/nfbasic.html
+	nStr += '';
+	x = nStr.split('.');
+	x1 = x[0];
+	x2 = x.length > 1 ? '.' + x[1] : '';
+	var rgx = /(\d+)(\d{3})/;
+	while (rgx.test(x1)) {
+		x1 = x1.replace(rgx, '$1' + ',' + '$2');
+	}
+	return x1 + x2;
+}
+
+ 
+</script> 
+</head> 
+ 
+<body> 
+ 
+<h1>Long Tail Browser</h1> 
+ 
+<p>Find the least-used, oldest works in the DPLA's library holdings [<span onclick="toggleExplanation()" class="explanation">Explanation]</span></p> 
+<div id="explans" style="display:none;"> 
+<p class="explanation">This little app searches Harvard University Library's complete collection of 12 million holdings, finding the ones that have been checked out least, but that have been checked out at least once (or put on reserve, etc.).  It's silly, but it demonstrates a tiny bit of the power of LibraryCloud, the collaborative library metadata server.<p>
+<p class="explanation">The "score" is computed from circulation data and some other measures. Hover over a score to get more information. A hyphen indicates that for one reason or another, that information was not available. Unfortunately, with 12M holdings, there are frequently 25 null scores for any query. In the case of ties, the older publication date counts as further down the long tail.</p>
+<p class="explanation">David Weinberger<br>self@evident.com<br>Dec. 11, 2011</div> 
+ 
+<!-- <p>keyword: <textarea id="searchbox" cols=20 style="height:15px;">rome</textarea> --> 
+<p>Keyword: <input id="searchbox" type="text" size="40" value="digital network"/> 
+ 
+<input type="button" onclick="doCall();" value="search"> 
+</p> 
+<div id="displayarea"></div> 
+ 
+ 
+</body></html> 
+ 
+ 
